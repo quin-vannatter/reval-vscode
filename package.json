@@ -10,14 +10,63 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:reval-vscode.helloWorld"
+		"onCommand:reval-vscode.reload",
+		"onCommand:reval-vscode.clear",
+		"onCommand:reval-vscode.save"
 	],
 	"main": "./extension.js",
 	"contributes": {
 		"commands": [
 			{
-				"command": "reval-vscode.helloWorld",
-				"title": "Hello World"
+				"command": "reval-vscode.reload",
+				"title": "Applies Reval Patch"
+			},
+			{
+				"command": "reval-vscode.clear",
+				"title": "Clears Reval Patches"
+			},
+			{
+				"command": "reval-vscode.save",
+				"title": "Saves Reval Patches"
+			}
+		],
+		"keybindings": [
+			{
+				"command": "reval-vscode.reload",
+				"key": "alt+r",
+				"when": "editorTextFocus"
+			},
+			{
+				"command": "reval-vscode.clear",
+				"key": "alt-c",
+				"when": "editorTextFocus"
+			}
+		],
+		"configuration":[
+			{
+				"title": "Reval VSCode",
+				"properties": {
+					"revalVSCode.hostname": {
+						"type": "string",
+						"description": "Server hostname",
+						"default": "localhost"
+					},
+					"revalVSCode.port": {
+						"type": "integer",
+						"description": "Server port ( <= 0 to ignore value )",
+						"default": 3000
+					},
+					"revalVSCode.endpoint": {
+						"type": "string",
+						"description": "Server endpoint",
+						"default": ""
+					},
+					"revalVSCode.useHttps": {
+						"type": "boolean",
+						"description": "If True, Use HTTPS",
+						"default": false
+					}
+				}
 			}
 		]
 	},

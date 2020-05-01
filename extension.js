@@ -1,37 +1,74 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 const vscode = require('vscode');
+const https = require('https');
+const http = require('http');
 
-// this method is called when your extension is activated
-// your extension is activated the very first time the command is executed
+const COMMAND_PARENT = 'reval-vscode';
+const CONFIG_NAME = 'revalVSCode';
 
-/**
- * @param {vscode.ExtensionContext} context
- */
 function activate(context) {
-
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "reval-vscode" is now active!');
-
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with  registerCommand
-	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('reval-vscode.helloWorld', function () {
-		// The code you place here will be executed every time your command is executed
-
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from reval-vscode!');
-	});
-
-	context.subscriptions.push(disposable);
+	registerCommand(context, 'reload', () => makeRequest('reload'));
+	registerCommand(context, 'clear', () => makeRequest('clear'));
+	registerCommand(context, 'save', () => makeRequest('save'));
 }
-exports.activate = activate;
 
-// this method is called when your extension is deactivated
-function deactivate() {}
+function makeRequest(action) {
+	if(vscode.window.activeTextEditor) {
+
+		const config = getConfig();
+		
+		const data = vscode.window.activeTextEditor.document.getText();
+		const filePath = vscode.window.activeTextEditor.document.fileName;
+
+		const hostname = config.hostname.trim();
+		const port = config.port > 0 ? config.port : undefined;
+		const endpoint = config.endpoint;
+
+		const options = {
+			hostname,
+			port,
+			path: `${endpoint}/reval/${action}?filePath=${filePath}`,
+			method: action === 'reload' ? 'POST' : 'GET',
+			headers: {
+				'Content-Type': 'text/plain'
+			}
+		}
+
+		const response = () => {
+			let msg;
+			switch(action) {
+				case 'reload': 
+					msg = 'Patch Applied';
+					break;
+				case 'clear':
+					msg = 'Patch Cleared';
+					break;
+				case 'save':
+					msg = 'Patch Saved';
+					break;
+			}
+			vscode.window.showInformationMessage(fmtMsg(msg));
+		}
+		const req = config.useHttps ? https.request(options, response) : http.request(options, response);
+		req.on('error', error => vscode.window.showErrorMessage(fmtMsg(error.message)));
+		if(action === 'reload') {
+			req.write(data);
+		}
+		req.end();
+	}
+}
+
+function getConfig() {
+	return vscode.workspace.getConfiguration(CONFIG_NAME, vscode.window.activeTextEditor.document.uri);
+}
+
+function registerCommand(context, name, func) {
+	context.subscriptions.push(vscode.commands.registerCommand(`${COMMAND_PARENT}.${name}`, () => func()));
+}
+
+function fmtMsg(message) {
+	return `${COMMAND_PARENT}: ${message}`;
+}
 
 module.exports = {
-	activate,
-	deactivate
+	activate
 }
